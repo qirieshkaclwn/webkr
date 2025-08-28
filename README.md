@@ -62,18 +62,8 @@ CREATE DATABASE pern_crud;
 psql -U postgres -d pern_crud -f create_matches_table.sql
 ```
 
-### 4. Настройка переменных окружения
-Создайте файл `.env` в корневой папке:
-```env
-JWT_SECRET=your-secret-key-here
-DB_USER=postgres
-DB_PASSWORD=1234
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=pern_crud
-```
 
-### 5. Запуск приложения
+### 4. Запуск приложения
 
 #### Запуск сервера
 ```bash
