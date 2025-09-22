@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import ItemList from './components/ItemList';
-import ItemForm from './components/ItemForm';
-import EditItem from './components/EditItem';
+import MatchList from './components/MatchList';
+import MatchForm from './components/MatchForm';
+import EditMatch from './components/EditMatch';
 import Auth from './components/Auth';
+import Airplane from './components/Airplane';
 
 function App() {
-  const [items, setItems] = useState([]);
-  const [editingItem, setEditingItem] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [editingMatch, setEditingMatch] = useState(null);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -15,16 +16,16 @@ function App() {
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
-    fetchItems();
+    fetchMatches();
   }, []);
 
-  const fetchItems = async () => {
+  const fetchMatches = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/items');
+      const response = await fetch('http://localhost:5000/api/matches');
       const data = await response.json();
-      setItems(data);
+      setMatches(data);
     } catch (error) {
-      console.error('Error fetching items:', error);
+      console.error('Error fetching matches:', error);
     }
   };
 
@@ -42,7 +43,7 @@ function App() {
 
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/items/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/matches/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -53,14 +54,14 @@ function App() {
         throw new Error('Ошибка при удалении');
       }
 
-      fetchItems();
+      fetchMatches();
     } catch (error) {
-      console.error('Error deleting item:', error);
+      console.error('Error deleting match:', error);
     }
   };
 
-  const handleEdit = (item) => {
-    setEditingItem(item);
+  const handleEdit = (match) => {
+    setEditingMatch(match);
   };
 
   if (!user) {
@@ -70,7 +71,7 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <h1>Фитинги и рукава высокого давления</h1>
+        <h1>Киберспортивные результаты</h1>
         <div className="user-info">
           <span>Привет, {user.username}!</span>
           <button onClick={handleLogout} className="logout-btn">
@@ -81,24 +82,25 @@ function App() {
       <div className="container">
         {user.is_admin && (
           <div className="form-section">
-            {editingItem ? (
-              <EditItem
-                item={editingItem}
-                onCancel={() => setEditingItem(null)}
-                onUpdate={fetchItems}
+            {editingMatch ? (
+              <EditMatch
+                match={editingMatch}
+                onCancel={() => setEditingMatch(null)}
+                onUpdate={fetchMatches}
               />
             ) : (
-              <ItemForm onAdd={fetchItems} />
+              <MatchForm onAdd={fetchMatches} />
             )}
           </div>
         )}
         <div className="list-section">
-          <ItemList
-            items={items}
+          <MatchList
+            matches={matches}
             onDelete={user.is_admin ? handleDelete : null}
             onEdit={user.is_admin ? handleEdit : null}
           />
         </div>
+        <Airplane />
       </div>
     </div>
   );

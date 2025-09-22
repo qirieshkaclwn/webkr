@@ -119,8 +119,158 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Routes
-// Get all items
+// Match routes
+// Get all matches
+app.get('/api/matches', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM matches ORDER BY match_date DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Create new match (только для админов)
+app.post('/api/matches', authenticateToken, isAdmin, upload.single('photo'), async (req, res) => {
+  try {
+    const { 
+      team1, 
+      team2, 
+      team1_score, 
+      team2_score, 
+      tournament, 
+      game_type, 
+      match_date, 
+      status, 
+      description 
+    } = req.body;
+    
+    const photo = req.file ? req.file.filename : null;
+    const created_at = new Date();
+    
+    let result;
+    try {
+      // Пробуем вставить с полями created_at и updated_at
+      result = await pool.query(
+        `INSERT INTO matches (
+          team1, team2, team1_score, team2_score, tournament, 
+          game_type, match_date, status, description, photo, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11) RETURNING *`,
+        [team1, team2, team1_score, team2_score, tournament, game_type, match_date, status, description, photo, created_at]
+      );
+    } catch (insertErr) {
+      if (insertErr.code === '42703') { // Код ошибки для отсутствующего столбца
+        // Если столбец updated_at не существует, выполняем запрос только с created_at
+        try {
+          result = await pool.query(
+            `INSERT INTO matches (
+              team1, team2, team1_score, team2_score, tournament, 
+              game_type, match_date, status, description, photo, created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+            [team1, team2, team1_score, team2_score, tournament, game_type, match_date, status, description, photo, created_at]
+          );
+        } catch (err2) {
+          // Если и created_at не существует
+          if (err2.code === '42703') {
+            result = await pool.query(
+              `INSERT INTO matches (
+                team1, team2, team1_score, team2_score, tournament, 
+                game_type, match_date, status, description, photo
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+              [team1, team2, team1_score, team2_score, tournament, game_type, match_date, status, description, photo]
+            );
+          } else {
+            throw err2;
+          }
+        }
+      } else {
+        throw insertErr;
+      }
+    }
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Update match (только для админов)
+app.put('/api/matches/:id', authenticateToken, isAdmin, upload.single('photo'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      team1, 
+      team2, 
+      team1_score, 
+      team2_score, 
+      tournament, 
+      game_type, 
+      match_date, 
+      status, 
+      description 
+    } = req.body;
+    
+    const photo = req.file ? req.file.filename : req.body.photo;
+    const updated_at = new Date();
+    
+    let result;
+    try {
+      // Пробуем обновить с полем updated_at
+      result = await pool.query(
+        `UPDATE matches SET 
+          team1 = $1, team2 = $2, team1_score = $3, team2_score = $4, 
+          tournament = $5, game_type = $6, match_date = $7, status = $8, 
+          description = $9, photo = $10, updated_at = $11 
+        WHERE id = $12 RETURNING *`,
+        [team1, team2, team1_score, team2_score, tournament, game_type, match_date, status, description, photo, updated_at, id]
+      );
+    } catch (updateErr) {
+      if (updateErr.code === '42703') { // Код ошибки для отсутствующего столбца
+        // Если столбец updated_at не существует, выполняем запрос без него
+        result = await pool.query(
+          `UPDATE matches SET 
+            team1 = $1, team2 = $2, team1_score = $3, team2_score = $4, 
+            tournament = $5, game_type = $6, match_date = $7, status = $8, 
+            description = $9, photo = $10 
+          WHERE id = $11 RETURNING *`,
+          [team1, team2, team1_score, team2_score, tournament, game_type, match_date, status, description, photo, id]
+        );
+      } else {
+        throw updateErr; // Если ошибка другая, передаём её дальше
+      }
+    }
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Матч не найден' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Delete match (только для админов)
+app.delete('/api/matches/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('DELETE FROM matches WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Матч не найден' });
+    }
+    
+    res.json({ message: 'Матч успешно удален' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Legacy items routes for backward compatibility
 app.get('/api/items', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM items ORDER BY id DESC');
@@ -131,7 +281,6 @@ app.get('/api/items', async (req, res) => {
   }
 });
 
-// Create new item (только для админов)
 app.post('/api/items', authenticateToken, isAdmin, upload.single('photo'), async (req, res) => {
   try {
     const { title, description } = req.body;
@@ -176,7 +325,6 @@ app.post('/api/items', authenticateToken, isAdmin, upload.single('photo'), async
   }
 });
 
-// Update item (только для админов)
 app.put('/api/items/:id', authenticateToken, isAdmin, upload.single('photo'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -214,7 +362,6 @@ app.put('/api/items/:id', authenticateToken, isAdmin, upload.single('photo'), as
   }
 });
 
-// Delete item (только для админов)
 app.delete('/api/items/:id', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
