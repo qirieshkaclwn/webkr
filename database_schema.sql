@@ -76,6 +76,21 @@ COMMENT ON COLUMN matches.updated_at IS 'Дата последнего обно�
 -- ТЕСТОВЫЕ ДАННЫЕ
 -- =====================================================
 
+-- Вставка тестовых пользователей
+-- Пароль для всех: 'password' (хешированный с bcrypt)
+INSERT INTO users (username, password, is_admin) VALUES
+    ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', true),
+    ('usr', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', false)
+ON CONFLICT (username) DO NOTHING;
+
+-- Вставка примеров матчей
+INSERT INTO matches (team1, team2, team1_score, team2_score, tournament, game_type, match_date, status, description) VALUES
+    ('Natus Vincere', 'Astralis', 16, 12, 'IEM Cologne 2024', 'CS:GO', '2024-01-15 18:00:00', 'finished', 'Полуфинальный матч'),
+    ('T1', 'Gen.G', 2, 1, 'Worlds 2024', 'League of Legends', '2024-01-20 20:00:00', 'finished', 'Финал турнира'),
+    ('FaZe Clan', 'G2 Esports', 0, 0, 'BLAST Premier', 'CS:GO', '2024-01-25 19:30:00', 'upcoming', 'Предстоящий матч группового этапа')
+ON CONFLICT (id) DO NOTHING;
+
+
 
 -- =====================================================
 -- ТРИГГЕРЫ ДЛЯ ОБНОВЛЕНИЯ updated_at
