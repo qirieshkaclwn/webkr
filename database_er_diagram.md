@@ -1,7 +1,7 @@
 # ER Диаграмма базы данных
 
 ## Описание
-Диаграмма показывает структуру базы данных киберспортивного сайта с тремя основными таблицами.
+Диаграмма показывает структуру базы данных киберспортивного сайта с двумя основными таблицами.
 
 ## Mermaid ER Diagram
 
@@ -32,15 +32,7 @@ erDiagram
         timestamp updated_at
     }
     
-    ITEMS {
-        int id PK
-        varchar title
-        text description
-        varchar photo
-        timestamp created_at
-        timestamp updated_at
-    }
-    
+
     MATCHES_STATS {
         varchar game_type
         int total_matches
@@ -51,7 +43,7 @@ erDiagram
     
     %% Связи (если бы были внешние ключи)
     %% USERS ||--o{ MATCHES : "создает"
-    %% USERS ||--o{ ITEMS : "создает"
+
     
     %% Представление статистики
     MATCHES ||--|| MATCHES_STATS : "статистика"
@@ -79,14 +71,7 @@ erDiagram
 - **photo** - Путь к фотографии
 - **created_at, updated_at** - Даты создания и обновления
 
-### 3. ITEMS (Элементы)
-- **id** - Первичный ключ, автоинкремент
-- **title** - Заголовок элемента
-- **description** - Описание элемента
-- **photo** - Путь к фотографии
-- **created_at, updated_at** - Даты создания и обновления
-
-### 4. MATCHES_STATS (Представление статистики)
+### 3. MATCHES_STATS (Представление статистики)
 - **game_type** - Тип игры
 - **total_matches** - Общее количество матчей
 - **finished_matches** - Завершенные матчи
@@ -106,9 +91,7 @@ erDiagram
 - `idx_matches_tournament` - по tournament
 - `idx_matches_teams` - по team1, team2
 
-### ITEMS
-- `idx_items_title` - по title
-- `idx_items_created_at` - по created_at
+
 
 ## Триггеры
 
@@ -117,5 +100,5 @@ erDiagram
 ## Права доступа
 
 - **SELECT** - всем пользователям на все таблицы
-- **INSERT, UPDATE, DELETE** - на matches и items для всех
+- **INSERT, UPDATE, DELETE** - на matches для всех
 - **INSERT, UPDATE, DELETE** - на users для всех (управление пользователями)

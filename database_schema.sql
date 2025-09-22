@@ -72,32 +72,7 @@ COMMENT ON COLUMN matches.photo IS 'Путь к фотографии матча'
 COMMENT ON COLUMN matches.created_at IS 'Дата создания записи';
 COMMENT ON COLUMN matches.updated_at IS 'Дата последнего обновления';
 
--- =====================================================
--- ТАБЛИЦА: items (Элементы - для обратной совместимости)
--- =====================================================
-CREATE TABLE IF NOT EXISTS items (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    photo VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
--- Индексы для таблицы items
-CREATE INDEX IF NOT EXISTS idx_items_title ON items(title);
-CREATE INDEX IF NOT EXISTS idx_items_created_at ON items(created_at);
-
--- Комментарии для таблицы items
-COMMENT ON TABLE items IS 'Таблица элементов (для обратной совместимости)';
-COMMENT ON COLUMN items.id IS 'Уникальный идентификатор элемента';
-COMMENT ON COLUMN items.title IS 'Заголовок элемента';
-COMMENT ON COLUMN items.description IS 'Описание элемента';
-COMMENT ON COLUMN items.photo IS 'Путь к фотографии элемента';
-COMMENT ON COLUMN items.created_at IS 'Дата создания записи';
-COMMENT ON COLUMN items.updated_at IS 'Дата последнего обновления';
-
--- =====================================================
 -- ТЕСТОВЫЕ ДАННЫЕ
 -- =====================================================
 
@@ -122,8 +97,7 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
 CREATE TRIGGER update_matches_updated_at BEFORE UPDATE ON matches
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_items_updated_at BEFORE UPDATE ON items
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 
 -- =====================================================
 -- ПРАВА ДОСТУПА
@@ -134,7 +108,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO PUBLIC;
 
 -- Предоставление прав на запись только аутентифицированным пользователям
 GRANT INSERT, UPDATE, DELETE ON matches TO PUBLIC;
-GRANT INSERT, UPDATE, DELETE ON items TO PUBLIC;
+
 
 -- Только администраторы могут управлять пользователями
 GRANT INSERT, UPDATE, DELETE ON users TO PUBLIC;
@@ -145,13 +119,13 @@ GRANT INSERT, UPDATE, DELETE ON users TO PUBLIC;
 
 -- Создание представления для статистики матчей
 CREATE OR REPLACE VIEW matches_stats AS
-SELECT 
+SELECT
     game_type,
     COUNT(*) as total_matches,
     COUNT(CASE WHEN status = 'finished' THEN 1 END) as finished_matches,
     COUNT(CASE WHEN status = 'upcoming' THEN 1 END) as upcoming_matches,
     COUNT(CASE WHEN status = 'live' THEN 1 END) as live_matches
-FROM matches 
+FROM matches
 GROUP BY game_type;
 
 -- Комментарий для представления

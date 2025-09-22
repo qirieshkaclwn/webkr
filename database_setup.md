@@ -36,7 +36,6 @@ psql -U postgres -d pern_crud -f database_schema.sql
 -- Проверка данных
 SELECT * FROM users;
 SELECT * FROM matches;
-SELECT * FROM items;
 
 -- Проверка представления статистики
 SELECT * FROM matches_stats;
@@ -93,11 +92,9 @@ psql -U postgres pern_crud < backup.sql
 ```sql
 -- Очистка всех данных (кроме пользователей)
 DELETE FROM matches;
-DELETE FROM items;
 
 -- Сброс автоинкремента
 ALTER SEQUENCE matches_id_seq RESTART WITH 1;
-ALTER SEQUENCE items_id_seq RESTART WITH 1;
 ```
 
 ## Мониторинг
@@ -107,7 +104,7 @@ ALTER SEQUENCE items_id_seq RESTART WITH 1;
 -- Статистика по таблицам
 SELECT schemaname, tablename, attname, n_distinct, correlation 
 FROM pg_stats 
-WHERE tablename IN ('users', 'matches', 'items');
+WHERE tablename IN ('users', 'matches');
 
 -- Размер таблиц
 SELECT 
