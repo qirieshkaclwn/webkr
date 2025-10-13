@@ -1,5 +1,12 @@
 import React from 'react';
 
+const hasValidPhoto = (photo) => {
+  if (!photo) return false;
+  if (typeof photo !== 'string') return true; // assume valid if it's not a string
+  const p = photo.trim().toLowerCase();
+  return p !== '' && p !== 'null' && p !== 'undefined';
+};
+
 function ItemList({ items, onDelete, onEdit }) {
   // Функция для форматирования даты
   const formatDate = (dateString) => {
@@ -17,12 +24,12 @@ function ItemList({ items, onDelete, onEdit }) {
 
   return (
     <div className="item-list">
-      <h2>Каталог элементов</h2>
-      {items.length === 0 && <p className="no-items">Нет доступных фитингов</p>}
+      <h2>Рецепты печенья</h2>
+      {items.length === 0 && <p className="no-items">Нет доступных рецептов</p>}
       <div className="items-grid">
         {items.map((item) => (
           <div key={item.id} className="item-card">
-            {item.photo && (
+            {hasValidPhoto(item.photo) && (
               <img
                 src={`http://localhost:5000/uploads/${item.photo}`}
                 alt={item.title}
@@ -31,6 +38,12 @@ function ItemList({ items, onDelete, onEdit }) {
             )}
             <div className="item-content">
               <h3>{item.title}</h3>
+              {item.ingredients && (
+                <div className="item-ingredients">
+                  <strong>Ингредиенты:</strong>
+                  <p>{item.ingredients}</p>
+                </div>
+              )}
               <div className="item-dates">
                 {item.created_at && (
                   <div className="date-info">
@@ -45,7 +58,12 @@ function ItemList({ items, onDelete, onEdit }) {
                   </div>
                 )}
               </div>
-              <p>{item.description}</p>
+              {item.description && (
+                <div className="item-description">
+                  <strong>Описание:</strong>
+                  <p>{item.description}</p>
+                </div>
+              )}
               {onDelete && onEdit && (
                 <div className="item-actions">
                   <button onClick={() => onEdit(item)} className="edit-btn">

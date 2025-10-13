@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 function EditItem({ item, onCancel, onUpdate }) {
   const [title, setTitle] = useState(item.title);
   const [description, setDescription] = useState(item.description);
+  const [ingredients, setIngredients] = useState(item.ingredients || '');
   const [photo, setPhoto] = useState(null);
   const [currentPhoto, setCurrentPhoto] = useState(item.photo);
   const [error, setError] = useState('');
@@ -10,6 +11,7 @@ function EditItem({ item, onCancel, onUpdate }) {
   useEffect(() => {
     setTitle(item.title);
     setDescription(item.description);
+    setIngredients(item.ingredients || '');
     setCurrentPhoto(item.photo);
   }, [item]);
 
@@ -20,6 +22,7 @@ function EditItem({ item, onCancel, onUpdate }) {
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
+    formData.append('ingredients', ingredients);
     if (photo) {
       formData.append('photo', photo);
     } else {
@@ -48,7 +51,7 @@ function EditItem({ item, onCancel, onUpdate }) {
 
   return (
     <form onSubmit={handleSubmit} className="edit-form">
-      <h2>Редактировать элемент</h2>
+    <h2>Редактировать рецепт</h2>
       {error && <div className="error-message">{error}</div>}
       <div className="form-group">
         <label htmlFor="edit-title">Название:</label>
@@ -70,8 +73,17 @@ function EditItem({ item, onCancel, onUpdate }) {
         />
       </div>
       <div className="form-group">
+        <label htmlFor="edit-ingredients">Ингредиенты (через запятую):</label>
+        <textarea
+          id="edit-ingredients"
+          value={ingredients}
+          onChange={(e) => setIngredients(e.target.value)}
+          required
+        />
+      </div>
+      <div className="form-group">
         <label htmlFor="edit-photo">Фото:</label>
-        {currentPhoto && (
+        {currentPhoto && currentPhoto !== 'null' && currentPhoto !== 'undefined' && (
           <img
             src={`http://localhost:5000/uploads/${currentPhoto}`}
             alt="Текущее"

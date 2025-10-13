@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 function ItemForm({ onAdd }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [ingredients, setIngredients] = useState('');
   const [photo, setPhoto] = useState(null);
   const [error, setError] = useState('');
 
@@ -13,6 +14,7 @@ function ItemForm({ onAdd }) {
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
+    formData.append('ingredients', ingredients);
     if (photo) {
       formData.append('photo', photo);
     }
@@ -41,7 +43,7 @@ function ItemForm({ onAdd }) {
 
   return (
     <form onSubmit={handleSubmit} className="item-form">
-      <h2>Добавить новый элемент</h2>
+  <h2>Добавить новый рецепт печенья</h2>
       {error && <div className="error-message">{error}</div>}
       <div className="form-group">
         <label htmlFor="title">Название:</label>
@@ -59,6 +61,16 @@ function ItemForm({ onAdd }) {
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          required
+        />
+      </div>
+      <div className="form-group">
+        <label htmlFor="ingredients">Ингредиенты (через запятую):</label>
+        <textarea
+          id="ingredients"
+          value={ingredients}
+          onChange={(e) => setIngredients(e.target.value)}
+          placeholder="Мука, сахар, масло, яйца..."
           required
         />
       </div>

@@ -70,7 +70,7 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <h1>Фитинги и рукава высокого давления</h1>
+        <h1>Рецепты печенья</h1>
         <div className="user-info">
           <span>Привет, {user.username}!</span>
           <button onClick={handleLogout} className="logout-btn">

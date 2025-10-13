@@ -23,6 +23,16 @@ const pool = new Pool({
   database: 'pern_crud',
 });
 
+// Ensure DB has expected schema columns: add 'ingredients' if missing (safe to run)
+(async () => {
+  try {
+    await pool.query("ALTER TABLE items ADD COLUMN IF NOT EXISTS ingredients TEXT;");
+    console.log("Ensured column 'ingredients' exists on items table");
+  } catch (err) {
+    console.warn("Could not ensure 'ingredients' column (table may not exist yet):", err.message);
+  }
+})();
+
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -134,32 +144,46 @@ app.get('/api/items', async (req, res) => {
 // Create new item (только для админов)
 app.post('/api/items', authenticateToken, isAdmin, upload.single('photo'), async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, ingredients } = req.body;
     const photo = req.file ? req.file.filename : null;
     const created_at = new Date();
+    console.log('POST /api/items payload:', { title, description, ingredients, photo });
     
     let result;
     try {
-      // Пробуем вставить с полями created_at и updated_at
+      // Попытка вставить со столбцами created_at и updated_at и новым полем ingredients
       result = await pool.query(
-        'INSERT INTO items (title, description, photo, created_at, updated_at) VALUES ($1, $2, $3, $4, $4) RETURNING *',
-        [title, description, photo, created_at]
+        'INSERT INTO items (title, description, ingredients, photo, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $5) RETURNING *',
+        [title, description, ingredients, photo, created_at]
       );
     } catch (insertErr) {
-      if (insertErr.code === '42703') { // Код ошибки для отсутствующего столбца
-        // Если столбец updated_at не существует, выполняем запрос только с created_at
+      if (insertErr.code === '42703') { // отсутствует столбец (возможно ingredients или timestamps)
+        // Попробуем варианты без timestamps и/или без ingredients
         try {
+          // попробуем без updated_at
           result = await pool.query(
-            'INSERT INTO items (title, description, photo, created_at) VALUES ($1, $2, $3, $4) RETURNING *',
-            [title, description, photo, created_at]
+            'INSERT INTO items (title, description, ingredients, photo, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [title, description, ingredients, photo, created_at]
           );
         } catch (err2) {
-          // Если и created_at не существует
+          // если снова ошибка 42703, попробуем вставку без ingredients
           if (err2.code === '42703') {
-            result = await pool.query(
-              'INSERT INTO items (title, description, photo) VALUES ($1, $2, $3) RETURNING *',
-              [title, description, photo]
-            );
+            try {
+              result = await pool.query(
+                'INSERT INTO items (title, description, photo, created_at, updated_at) VALUES ($1, $2, $3, $4, $4) RETURNING *',
+                [title, description, photo, created_at]
+              );
+            } catch (err3) {
+              if (err3.code === '42703') {
+                // последний вариант — без created_at/updated_at и без ingredients
+                result = await pool.query(
+                  'INSERT INTO items (title, description, photo) VALUES ($1, $2, $3) RETURNING *',
+                  [title, description, photo]
+                );
+              } else {
+                throw err3;
+              }
+            }
           } else {
             throw err2;
           }
@@ -169,7 +193,8 @@ app.post('/api/items', authenticateToken, isAdmin, upload.single('photo'), async
       }
     }
     
-    res.json(result.rows[0]);
+  console.log('POST /api/items db result:', result.rows[0]);
+  res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Ошибка сервера' });
@@ -180,24 +205,37 @@ app.post('/api/items', authenticateToken, isAdmin, upload.single('photo'), async
 app.put('/api/items/:id', authenticateToken, isAdmin, upload.single('photo'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description } = req.body;
+    const { title, description, ingredients } = req.body;
     const photo = req.file ? req.file.filename : req.body.photo;
     const updated_at = new Date();
+    console.log('PUT /api/items payload:', { id, title, description, ingredients, photo });
     
     let result;
     try {
-      // Пробуем обновить с полем updated_at
+      // Попытка обновить с полем updated_at и ingredients
       result = await pool.query(
-        'UPDATE items SET title = $1, description = $2, photo = $3, updated_at = $4 WHERE id = $5 RETURNING *',
-        [title, description, photo, updated_at, id]
+        'UPDATE items SET title = $1, description = $2, ingredients = $3, photo = $4, updated_at = $5 WHERE id = $6 RETURNING *',
+        [title, description, ingredients, photo, updated_at, id]
       );
     } catch (updateErr) {
-      if (updateErr.code === '42703') { // Код ошибки для отсутствующего столбца
-        // Если столбец updated_at не существует, выполняем запрос без него
-        result = await pool.query(
-          'UPDATE items SET title = $1, description = $2, photo = $3 WHERE id = $4 RETURNING *',
-          [title, description, photo, id]
-        );
+      if (updateErr.code === '42703') {
+        // попытка без updated_at
+        try {
+          result = await pool.query(
+            'UPDATE items SET title = $1, description = $2, ingredients = $3, photo = $4 WHERE id = $5 RETURNING *',
+            [title, description, ingredients, photo, id]
+          );
+        } catch (err2) {
+          if (err2.code === '42703') {
+            // последний вариант — обновление без ingredients и без updated_at
+            result = await pool.query(
+              'UPDATE items SET title = $1, description = $2, photo = $3 WHERE id = $4 RETURNING *',
+              [title, description, photo, id]
+            );
+          } else {
+            throw err2;
+          }
+        }
       } else {
         throw updateErr; // Если ошибка другая, передаём её дальше
       }
@@ -207,7 +245,8 @@ app.put('/api/items/:id', authenticateToken, isAdmin, upload.single('photo'), as
       return res.status(404).json({ error: 'Элемент не найден' });
     }
     
-    res.json(result.rows[0]);
+  console.log('PUT /api/items db result:', result.rows[0]);
+  res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Ошибка сервера' });
